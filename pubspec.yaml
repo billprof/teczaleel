@@ -1,5 +1,5 @@
 name: teczaleel
-description: "A new Flutter project."
+description: "Advanced flutter practical assessment - junior developer"
 
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
@@ -34,6 +34,7 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
   flutter_native_splash: ^2.4.6
+  mocktail: ^1.0.4
 
 flutter:
   uses-material-design: true
