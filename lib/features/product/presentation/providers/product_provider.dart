@@ -52,44 +52,45 @@ class ProductsNotifier extends AsyncNotifier<List<Product>> {
 
   @override
   Future<List<Product>> build() async {
-    // 1. Initially load from cache
-    _loadFromCache();
-    // 2. Then try to load from remote
-    _loadFromRemote();
-    // 3. Setup connectivity listener for future changes
+    // 1. Setup connectivity listener for future changes
     _listenForConnectivity();
 
     ref.onDispose(() {
       _connectivitySubscription?.cancel();
     });
 
-    return [];
-  }
-
-  Future<void> _loadFromCache() async {
+    // 2. Try to load from cache
     final getProducts = ref.read(getProductsUseCaseProvider);
-    final result = await getProducts(fromCache: true);
-    result.fold(
-      (failure) => null, // Ignore cache failure
-      (products) {
-        if (products.isNotEmpty) {
-          state = AsyncData(products);
-        }
-      },
-    );
+    final cacheResult = await getProducts(fromCache: true);
+    final cachedData = cacheResult.getOrElse(() => []);
+
+    if (cachedData.isNotEmpty) {
+      // If we have cache, return it immediately (AsyncData)
+      // and trigger remote update in background.
+      _loadFromRemote();
+      return cachedData;
+    } else {
+      // If no cache, return the remote fetch future to keep state in AsyncLoading
+      return _fetchRemoteData();
+    }
   }
 
   Future<void> _loadFromRemote() async {
-    if (_isRemoteFetching) return;
+    await _fetchRemoteData();
+  }
+
+  Future<List<Product>> _fetchRemoteData() async {
+    if (_isRemoteFetching) return state.value ?? [];
     _isRemoteFetching = true;
 
     try {
       final getProducts = ref.read(getProductsUseCaseProvider);
       final result = await getProducts(fromCache: false);
-      result.fold(
-        (failure) => null, // Silent on remote failure
+      return result.fold(
+        (failure) => state.value ?? [], // Return current state on failure
         (products) {
           state = AsyncData(products);
+          return products;
         },
       );
     } finally {
@@ -141,36 +142,38 @@ class CategoriesNotifier extends AsyncNotifier<List<String>> {
 
   @override
   Future<List<String>> build() async {
-    _loadFromCache();
-    _loadFromRemote();
     _listenForConnectivity();
 
     ref.onDispose(() {
       _connectivitySubscription?.cancel();
     });
 
-    return [];
-  }
-
-  Future<void> _loadFromCache() async {
     final useCase = ref.read(getCategoriesUseCaseProvider);
-    final result = await useCase(fromCache: true);
-    result.fold((failure) => null, (categories) {
-      if (categories.isNotEmpty) {
-        state = AsyncData(categories);
-      }
-    });
+    final cacheResult = await useCase(fromCache: true);
+    final cachedData = cacheResult.getOrElse(() => []);
+
+    if (cachedData.isNotEmpty) {
+      _loadFromRemote();
+      return cachedData;
+    } else {
+      return _fetchRemoteData();
+    }
   }
 
   Future<void> _loadFromRemote() async {
-    if (_isRemoteFetching) return;
+    await _fetchRemoteData();
+  }
+
+  Future<List<String>> _fetchRemoteData() async {
+    if (_isRemoteFetching) return state.value ?? [];
     _isRemoteFetching = true;
 
     try {
       final useCase = ref.read(getCategoriesUseCaseProvider);
       final result = await useCase(fromCache: false);
-      result.fold((failure) => null, (categories) {
+      return result.fold((failure) => state.value ?? [], (categories) {
         state = AsyncData(categories);
+        return categories;
       });
     } finally {
       _isRemoteFetching = false;

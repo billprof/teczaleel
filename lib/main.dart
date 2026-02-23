@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7b32e8)),
         useMaterial3: true,
+        fontFamily: 'Inter',
       ),
       home: const ProductsPage(),
     );
