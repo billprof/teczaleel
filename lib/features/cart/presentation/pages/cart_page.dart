@@ -15,15 +15,7 @@ class CartPage extends ConsumerWidget {
     final totalPrice = ref.watch(cartProvider.notifier).totalPrice;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'My Cart',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
-        elevation: 0,
-      ),
+      appBar: AppBar(title: const Text('My Cart'), elevation: 0),
       body: cartItems.isEmpty
           ? EmptyCart()
           : Column(

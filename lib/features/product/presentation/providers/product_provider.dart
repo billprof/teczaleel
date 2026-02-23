@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:teczaleel/core/network/api_client.dart';
 import 'package:teczaleel/core/service_locator.dart';
@@ -41,15 +42,72 @@ final getCategoriesUseCaseProvider = Provider<GetCategories>((ref) {
   return GetCategories(repository);
 });
 
-final productsProvider = FutureProvider<List<Product>>((ref) async {
-  final getProducts = ref.read(getProductsUseCaseProvider);
-  final result = await getProducts();
+final productsProvider = AsyncNotifierProvider<ProductsNotifier, List<Product>>(
+  ProductsNotifier.new,
+);
 
-  return result.fold(
-    (failure) => throw Exception(failure.message),
-    (products) => products,
-  );
-});
+class ProductsNotifier extends AsyncNotifier<List<Product>> {
+  StreamSubscription<bool>? _connectivitySubscription;
+  bool _isRemoteFetching = false;
+
+  @override
+  Future<List<Product>> build() async {
+    // 1. Initially load from cache
+    _loadFromCache();
+    // 2. Then try to load from remote
+    _loadFromRemote();
+    // 3. Setup connectivity listener for future changes
+    _listenForConnectivity();
+
+    ref.onDispose(() {
+      _connectivitySubscription?.cancel();
+    });
+
+    return [];
+  }
+
+  Future<void> _loadFromCache() async {
+    final getProducts = ref.read(getProductsUseCaseProvider);
+    final result = await getProducts(fromCache: true);
+    result.fold(
+      (failure) => null, // Ignore cache failure
+      (products) {
+        if (products.isNotEmpty) {
+          state = AsyncData(products);
+        }
+      },
+    );
+  }
+
+  Future<void> _loadFromRemote() async {
+    if (_isRemoteFetching) return;
+    _isRemoteFetching = true;
+
+    try {
+      final getProducts = ref.read(getProductsUseCaseProvider);
+      final result = await getProducts(fromCache: false);
+      result.fold(
+        (failure) => null, // Silent on remote failure
+        (products) {
+          state = AsyncData(products);
+        },
+      );
+    } finally {
+      _isRemoteFetching = false;
+    }
+  }
+
+  void _listenForConnectivity() {
+    final networkInfo = ref.read(networkInfoProvider);
+    _connectivitySubscription = networkInfo.onConnectivityChanged.listen((
+      isConnected,
+    ) {
+      if (isConnected) {
+        _loadFromRemote();
+      }
+    });
+  }
+}
 
 final searchQueryProvider = NotifierProvider<SearchQueryNotifier, String>(
   SearchQueryNotifier.new,
@@ -72,11 +130,64 @@ class SelectedCategoryNotifier extends Notifier<String?> {
   void setCategory(String? category) => state = category;
 }
 
-final categoriesProvider = FutureProvider<List<String>>((ref) async {
-  final useCase = ref.watch(getCategoriesUseCaseProvider);
-  final result = await useCase();
-  return result.fold((failure) => [], (categories) => categories);
-});
+final categoriesProvider =
+    AsyncNotifierProvider<CategoriesNotifier, List<String>>(
+      CategoriesNotifier.new,
+    );
+
+class CategoriesNotifier extends AsyncNotifier<List<String>> {
+  StreamSubscription<bool>? _connectivitySubscription;
+  bool _isRemoteFetching = false;
+
+  @override
+  Future<List<String>> build() async {
+    _loadFromCache();
+    _loadFromRemote();
+    _listenForConnectivity();
+
+    ref.onDispose(() {
+      _connectivitySubscription?.cancel();
+    });
+
+    return [];
+  }
+
+  Future<void> _loadFromCache() async {
+    final useCase = ref.read(getCategoriesUseCaseProvider);
+    final result = await useCase(fromCache: true);
+    result.fold((failure) => null, (categories) {
+      if (categories.isNotEmpty) {
+        state = AsyncData(categories);
+      }
+    });
+  }
+
+  Future<void> _loadFromRemote() async {
+    if (_isRemoteFetching) return;
+    _isRemoteFetching = true;
+
+    try {
+      final useCase = ref.read(getCategoriesUseCaseProvider);
+      final result = await useCase(fromCache: false);
+      result.fold((failure) => null, (categories) {
+        state = AsyncData(categories);
+      });
+    } finally {
+      _isRemoteFetching = false;
+    }
+  }
+
+  void _listenForConnectivity() {
+    final networkInfo = ref.read(networkInfoProvider);
+    _connectivitySubscription = networkInfo.onConnectivityChanged.listen((
+      isConnected,
+    ) {
+      if (isConnected) {
+        _loadFromRemote();
+      }
+    });
+  }
+}
 
 final filteredProductsProvider = Provider<AsyncValue<List<Product>>>((ref) {
   final productsAsyncValue = ref.watch(productsProvider);

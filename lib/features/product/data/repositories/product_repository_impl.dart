@@ -19,7 +19,13 @@ class ProductRepositoryImpl implements ProductRepository {
   });
 
   @override
-  Future<Either<Failure, List<Product>>> getProducts() async {
+  Future<Either<Failure, List<Product>>> getProducts({
+    bool fromCache = false,
+  }) async {
+    if (fromCache) {
+      return _getLocalProducts();
+    }
+
     if (await networkInfo.isConnected) {
       try {
         final remoteProducts = await remoteDataSource.getProducts();
@@ -27,19 +33,31 @@ class ProductRepositoryImpl implements ProductRepository {
         return Right(remoteProducts);
       } on ServerException {
         return const Left(ServerFailure());
+      } catch (e) {
+        return const Left(ServerFailure());
       }
     } else {
-      try {
-        final localProducts = await localDataSource.getLastProducts();
-        return Right(localProducts);
-      } on CacheException {
-        return const Left(CacheFailure());
-      }
+      return _getLocalProducts();
+    }
+  }
+
+  Future<Either<Failure, List<Product>>> _getLocalProducts() async {
+    try {
+      final localProducts = await localDataSource.getLastProducts();
+      return Right(localProducts);
+    } catch (e) {
+      return const Left(CacheFailure());
     }
   }
 
   @override
-  Future<Either<Failure, List<String>>> getCategories() async {
+  Future<Either<Failure, List<String>>> getCategories({
+    bool fromCache = false,
+  }) async {
+    if (fromCache) {
+      return _getLocalCategories();
+    }
+
     if (await networkInfo.isConnected) {
       try {
         final remoteCategories = await remoteDataSource.getCategories();
@@ -47,14 +65,20 @@ class ProductRepositoryImpl implements ProductRepository {
         return Right(remoteCategories);
       } on ServerException {
         return const Left(ServerFailure());
+      } catch (e) {
+        return const Left(ServerFailure());
       }
     } else {
-      try {
-        final localCategories = await localDataSource.getLastCategories();
-        return Right(localCategories);
-      } on CacheException {
-        return const Left(CacheFailure());
-      }
+      return _getLocalCategories();
+    }
+  }
+
+  Future<Either<Failure, List<String>>> _getLocalCategories() async {
+    try {
+      final localCategories = await localDataSource.getLastCategories();
+      return Right(localCategories);
+    } catch (e) {
+      return const Left(CacheFailure());
     }
   }
 }

@@ -7,7 +7,7 @@ class GetCategories {
 
   GetCategories(this.repository);
 
-  Future<Either<Failure, List<String>>> call() async {
-    return await repository.getCategories();
+  Future<Either<Failure, List<String>>> call({bool fromCache = false}) async {
+    return await repository.getCategories(fromCache: fromCache);
   }
 }

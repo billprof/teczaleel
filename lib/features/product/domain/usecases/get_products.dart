@@ -8,7 +8,7 @@ class GetProducts {
 
   GetProducts(this.repository);
 
-  Future<Either<Failure, List<Product>>> call() async {
-    return await repository.getProducts();
+  Future<Either<Failure, List<Product>>> call({bool fromCache = false}) async {
+    return await repository.getProducts(fromCache: fromCache);
   }
 }
