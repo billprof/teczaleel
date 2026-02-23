@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/services/local_storage_service.dart';
+import 'features/product/presentation/pages/products_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,13 +19,12 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Teczaleel E-Commerce',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF7b32e8)),
         useMaterial3: true,
       ),
-      home: const Scaffold(
-        body: Center(child: Text('Teczaleel E-Commerce App')),
-      ),
+      home: const ProductsPage(),
     );
   }
 }
