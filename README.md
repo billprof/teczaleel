@@ -43,9 +43,12 @@ The system maps low-level exceptions to domain-level failures:
 - **Localization**: Support multi-language strings for global accessibility.
 
 ## Screenshots
-![App Mockup](screenshots/Screenshot_1771852455.png)
-![App Mockup](screenshots/Screenshot_1771852473.png)
-![App Mockup](screenshots/Screenshot_1771852483.png)
+
+<p align="center">
+  <img src="screenshots/Screenshot_1771852455.png" width="250">
+  <img src="screenshots/Screenshot_1771852473.png" width="250">
+  <img src="screenshots/Screenshot_1771852483.png" width="250">
+</p>
 
 
 ## How to Run
